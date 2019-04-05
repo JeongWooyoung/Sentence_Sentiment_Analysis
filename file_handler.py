@@ -1,0 +1,133 @@
+# coding: utf-8
+import csv, os, shutil, re
+import nltk
+
+def getGamesData(file_name, tokenizer=nltk.word_tokenize):
+    remove_tag = re.compile('^[ ]+|[\n]+')
+    replace_dot_tag = re.compile('[ ]*[.]+[ ]*')
+    records = loadTxT(file_name)
+    games = []
+    corpus = []
+    titles = []
+    corpus_words = []
+    words = []
+    s_start = False
+    for record in records:
+        if record == '\n':
+            if s_start :
+                s_start = False
+                sentences = replace_dot_tag.sub('.', remove_tag.sub('', sentences)).split('.')
+                if sentences[-1] == '': sentences = sentences[:-1]
+                game['sentences'] = sentences
+                corpus += sentences
+                for s in sentences:
+                    tokens = tokenizer(s)
+                    corpus_words.append(tokens)
+                    words += tokens
+                games.append(game)
+            continue
+        t_index = record.find('GameTitle : ')
+        if t_index > -1:
+            s_start = True
+            title = record[t_index+len('GameTitle : '):].replace('\n','')
+            game={'title':title}
+            titles.append(title)
+            sentences = ''
+            continue
+        elif s_start: sentences += record
+
+    return {'games':games, 'corpus':corpus, 'titles':titles, 'corpus_words':corpus_words, 'words':words}
+
+#########################################################################################################
+######################################### TXT ###########################################################
+
+def saveTxT(data, file_name):
+    if ".txt" not in file_name: file_name = file_name+".txt"
+
+    if ":\\" in file_name or ":/" in file_name : path = file_name.replace('\\','/')
+    else : path = getStoragePath()+file_name.replace('\\','/').replace(":", "")
+    directory = path[:path.rfind('/')]
+    if not os.path.isdir(directory):
+        makeDirectories(directory)
+
+    with open(path, "w", encoding='utf-8') as f:
+        f.writelines(data)
+    return True
+
+def loadTxT(file_name, column_rows=0):
+    if ".txt" not in file_name: file_name = file_name+".txt"
+
+    if ":\\" in file_name or ":/" in file_name : path = file_name.replace('\\','/')
+    else : path = getStoragePath()+file_name.replace('\\','/').replace(":", "")
+    if not os.path.isfile(path) :
+        return None
+
+    with open(path, "r", encoding='utf-8') as f:
+        lines = f.readlines()
+    return lines[column_rows:]
+
+#########################################################################################################
+######################################### CSV ###########################################################
+
+def saveCSV(data, file_name, column_sec=[]):
+    if ".csv" not in file_name: file_name = file_name+".csv"
+
+    if ":\\" in file_name or ":/" in file_name : path = file_name.replace('\\','/')
+    else : path = getStoragePath()+file_name.replace('\\','/').replace(":", "")
+    directory = path[:path.rfind('/')]
+    if not os.path.isdir(directory):
+        makeDirectories(directory)
+
+    csv_file = open(path, "w", newline='\n')
+    cw = csv.writer(csv_file, delimiter=',', quotechar='|')
+
+    if len(column_sec) > 0:
+        for columns in column_sec:
+            cw.writerow(columns)
+    for row in data:
+        cw.writerow(row)
+    csv_file.close()
+    return True
+
+def loadCSV(file_name, column_rows=0):
+    if ".csv" not in file_name: file_name = file_name+".csv"
+
+    if ":\\" in file_name or ":/" in file_name : path = file_name.replace('\\','/')
+    else : path = getStoragePath()+file_name.replace('\\','/').replace(":", "")
+    if not os.path.isfile(path) :
+        return None
+    csv_file = open(path, "r")
+    cr = csv.reader(csv_file, delimiter=',', quotechar='|')
+
+    lines = []
+    for line in cr:
+        lines.append(line)
+
+    csv_file.close()
+
+    return lines[column_rows:]
+
+#########################################################################################################
+#########################################################################################################
+def makeDirectories(directory):
+    if '\\' in directory: directory = directory.replace('\\', '/')
+    if '/' in directory:
+        u_dir = directory[:directory.rfind('/')]
+        if not os.path.isdir(u_dir):
+            makeDirectories(u_dir)
+    if not os.path.isdir(directory):
+        os.makedirs(directory)
+def getStoragePath():
+    StoragePath = os.getcwd().replace('\\', '/')+'/'
+    return StoragePath
+
+def clearCaches():
+    cache_dir = 'C:/Users/Wooyoung/AppData/Local/Temp/'
+    if not os.path.isdir(cache_dir) : return
+    files = os.listdir(cache_dir)
+    for file in files:
+        if 'tmp' in file:
+            if not os.path.isfile(cache_dir+file) :
+                try: shutil.rmtree(cache_dir+file)
+                except OSError as e: pass
+
