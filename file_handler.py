@@ -38,6 +38,28 @@ def getGamesData(file_name, tokenizer=nltk.word_tokenize):
 
     return {'games':games, 'corpus':corpus, 'titles':titles, 'corpus_words':corpus_words, 'words':words}
 
+def getSentiCorpus(path):
+    filter = re.compile('["/\'\[\],]+|[ ]$')
+    files = os.listdir(path)
+    sentences = []
+    tokens = []
+    polarity = []
+    for f in files:
+        lines = loadCSV(path+f, delimiter='\t')
+        for line in lines:
+            if (line[2] == 'SubjTag' or line[2] == 'ObjTag') and len(line[7]) > 0:
+                polarity.append(line[7])
+                sentences.append(filter.sub('', line[13]))
+
+                ts = line[14].split(' ')
+                temp = []
+                for t in ts:
+                    s = filter.sub('', t[:t.rfind('/')])
+                    if len(s) > 0: temp.append(s)
+                tokens.append(temp)
+    return {'sentences':sentences, 'tokens':tokens, 'polarity':polarity}
+
+
 #########################################################################################################
 ######################################### TXT ###########################################################
 
@@ -89,7 +111,7 @@ def saveCSV(data, file_name, column_sec=[]):
     csv_file.close()
     return True
 
-def loadCSV(file_name, column_rows=0):
+def loadCSV(file_name, column_rows=0, delimiter=',', quotechar='|'):
     if ".csv" not in file_name: file_name = file_name+".csv"
 
     if ":\\" in file_name or ":/" in file_name : path = file_name.replace('\\','/')
@@ -97,7 +119,7 @@ def loadCSV(file_name, column_rows=0):
     if not os.path.isfile(path) :
         return None
     csv_file = open(path, "r")
-    cr = csv.reader(csv_file, delimiter=',', quotechar='|')
+    cr = csv.reader(csv_file, delimiter=delimiter, quotechar=quotechar)
 
     lines = []
     for line in cr:
