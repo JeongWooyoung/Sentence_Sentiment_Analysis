@@ -39,7 +39,9 @@ def getGamesData(file_name, tokenizer=nltk.word_tokenize):
     return {'games':games, 'corpus':corpus, 'titles':titles, 'corpus_words':corpus_words, 'words':words}
 
 def getSentiCorpus(path):
-    filter = re.compile('["/\'\[\],]+|[ ]$')
+    filter = re.compile('["/\'\[\],]+|[ ]+$|[\.]+|^[0-9]+$|…|'
+                        '^[0-9]{2,4}[\-/.][0-9]{2}[\-/.][0-9]{2}( [0-9]{2}:[0-9]{2}(:[0-9]{2})?)?$|'
+                        '[\(\{\[].*[\)\}\]]')
     files = os.listdir(path)
     sentences = []
     tokens = []
@@ -47,9 +49,11 @@ def getSentiCorpus(path):
     for f in files:
         lines = loadCSV(path+f, delimiter='\t')
         for line in lines:
-            if (line[2] == 'SubjTag' or line[2] == 'ObjTag') and len(line[7]) > 0:
+            if (line[2] == 'SubjTag' or line[2] == 'ObjTag'):
+                sentence = filter.sub('', line[13])
+                if len(sentence) < 1: continue
                 polarity.append(line[7])
-                sentences.append(filter.sub('', line[13]))
+                sentences.append(sentence)
 
                 ts = line[14].split(' ')
                 temp = []
@@ -59,6 +63,9 @@ def getSentiCorpus(path):
                 tokens.append(temp)
     return {'sentences':sentences, 'tokens':tokens, 'polarity':polarity}
 
+def getSentiDictionary():
+    lines = loadCSV('sd.csv', 1)
+    return {w:s for w, p, s in lines}
 
 #########################################################################################################
 ######################################### TXT ###########################################################

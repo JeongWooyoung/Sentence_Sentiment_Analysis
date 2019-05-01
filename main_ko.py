@@ -14,18 +14,17 @@ if __name__ == '__main__':
     senti_dir = './KOSAC_sample/'
     # {'sentences':sentences, 'tokens':tokens, 'polarity':polarity}
     corpus = fh.getSentiCorpus(senti_dir)
+    contents = corpus['sentences']
 
-    vectorizer = Vectorizer()
-    # Tokenizing
-    tokenizer = vectorizer.getTokenizer(corpus['sentences'])
-    tokenized_contents = vectorizer.tokenizing(corpus['sentences'], tokenizer)
-
+    vec = Vectorizer()
+    tokenized_contents = vec.tokenizing(contents)
     # Vectorizing
     # sg=1(skip-gram), 0(CBOW)
     model_path = 'models/word2vec_ko.model'
-    word_vectors = vectorizer.vectorizing(model_path, tokenized_contents)
+    vectorized_contents = vec.vectorize(model_path, contents)
 
-    print(word_vectors)
+    print(vectorized_contents)
     # Make Train Set
+    # Embedding by convolution
 
-    # Train CNN and Evaluation
+    # Train ML and Evaluation
