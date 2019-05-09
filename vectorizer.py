@@ -1,6 +1,7 @@
 # coding: utf-8
 
 import os
+import numpy as np
 from gensim.models import Word2Vec
 
 from soynlp.word import WordExtractor
@@ -36,11 +37,11 @@ class Vectorizer:
         for c in contents:
             tokenized_contents.append(self.tokenizer(c))
         return tokenized_contents
-    def vectorize(self, model_path, contents, training=True):
+    def vectorize(self, model_path, contents, dims=20, training=True, padding=True):
         if training:
             tokenized_contents = self.tokenizing(contents)
 
-            word2vec_model = Word2Vec(tokenized_contents, size=20, window=6, min_count=2, workers=8, iter=1000, sg=1)
+            word2vec_model = Word2Vec(tokenized_contents, size=dims, window=6, min_count=2, workers=8, iter=1000, sg=1)
             dir_path = model_path[:model_path.rfind('/')]
 
             if not os.path.isdir(dir_path): fh.makeDirectories(dir_path)
@@ -57,11 +58,25 @@ class Vectorizer:
         # 추후 작업필요(기본형 기준 매칭 정확도 개선필요)
         word_vectors = {w:word_vectors[w].tolist()+[senti_dict[w] if w in senti_dict.keys() else .0] for w in word_vectors.vocab.keys()}
 
+        # 문장을 벡터리스트로 전환
+        max_len = 0
         vectorized_contents = []
         for s in tokenized_contents :
             vectorized_content = []
             for w in s:
                 if w in word_vectors.keys():
                     vectorized_content.append(word_vectors[w])
-            if len(vectorized_content) > 0: vectorized_contents.append(vectorized_content)
-        return vectorized_contents
+            length = len(vectorized_content)
+            if length > 0: vectorized_contents.append(vectorized_content)
+            if length > max_len: max_len = length
+
+        # 벡터리스트 패딩
+        if padding:
+            padded_contents = []
+            for v in vectorized_contents:
+                size = len(v)
+                if size < max_len: padded_contents.append(np.zeros((dims+1, max_len-size)).tolist()+v)
+                else: padded_contents.append(v)
+
+            return padded_contents
+        else: return vectorized_contents
