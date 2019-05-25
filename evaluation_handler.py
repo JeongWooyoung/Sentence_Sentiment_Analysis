@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 import arguments
 
 storage_path = fh.getStoragePath()
-def evaluations(args, data, targets):
+def evaluations(data, targets, classifier = lh.LSTM()):
     if not type(data).__module__==np.__name__: data = np.array(data)
     if not type(targets).__module__==np.__name__: targets = np.array(targets)
 
@@ -27,15 +27,14 @@ def evaluations(args, data, targets):
     for i, (train_index, test_index) in enumerate(kf.split(data)):
         train_data, train_target = data[train_index], targets[train_index]
 
-        lstm = lh.LSTM(args)
-        lstm.generateModels(shape[1], targets.shape[1], shape[2])
-        loss = lstm.train(data=train_data, target=train_target)
+        classifier.generateModels(shape[2], targets.shape[1], shape[1])
+        loss = classifier.train(data=train_data, target=train_target)
 
         test_data, test_target = data[test_index], targets[test_index]
 
-        rmse = lstm.evaluation(test_data, test_target)
+        rmse = classifier.evaluation(test_data, test_target)
         results.append([loss, rmse])
-        predicts = np.array(lstm.predict(test_data))
+        predicts = np.array(classifier.predict(test_data))
         fh.saveTxT(predicts.reshape(predicts.shape[0], 1), 'results/fold/%d'%(i+1))
 
     return results
@@ -78,7 +77,6 @@ def evaluatePredictions(test_labels, predicts):
         f1 = f1_score(y_pred=predicts, y_true=test_labels, average=average, pos_label=pos_label)
 
     return accuracy,precision, recall, f1
-
 
 def showScatter(Xs, Ys):
     cnt = len(Xs)

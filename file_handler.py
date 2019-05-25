@@ -1,6 +1,7 @@
 # coding: utf-8
 import csv, os, shutil, re
 import nltk
+import numpy as np
 
 def getGamesData(file_name, tokenizer=nltk.word_tokenize):
     remove_tag = re.compile('^[ ]+|[\n]+')
@@ -38,6 +39,21 @@ def getGamesData(file_name, tokenizer=nltk.word_tokenize):
 
     return {'games':games, 'corpus':corpus, 'titles':titles, 'corpus_words':corpus_words, 'words':words}
 
+def getComments():
+    path = 'Resource/'
+    sentences_files = os.listdir(path+'Sentences')
+    scores_files = os.listdir(path + 'Scores')
+    sentences = []
+    scores = []
+    for f in sentences_files:
+        for s in loadTxT(path+'Sentences/'+f):
+            s = re.sub('[^0-9가-힣A-Z]', ' ', s)
+            s = re.sub('[ ]{2,}', ' ', s)
+            s = re.sub('^[ ]+|[ 0-9]+([ 0-9]+)?$', '', s)
+            sentences.append(s)
+    for f in scores_files: scores += [[int(s[:1])] for s in loadTxT(path + 'Scores/' + f)]
+
+    return {'sentences':sentences, 'scores':scores}
 def getSentiCorpus(path):
     filter = re.compile('["/\'\[\],]+|[ ]+$|[\.]+|^[0-9]+$|…|'
                         '^[0-9]{2,4}[\-/.][0-9]{2}[\-/.][0-9]{2}( [0-9]{2}:[0-9]{2}(:[0-9]{2})?)?$|'
@@ -65,7 +81,22 @@ def getSentiCorpus(path):
 
 def getSentiDictionary():
     lines = loadCSV('sd.csv', 1)
-    return {w:s for w, p, s in lines}
+    dict = {}
+    for w, p, s in lines:
+        if not w[:2] in dict.keys(): dict[w[:2]] = float(s)
+        else: dict[w[:2]] = (dict[w[:2]]+float(s))/2
+    return dict
+
+def saveVectorizedContents(contents):
+    for i, c in enumerate(contents):
+        saveCSV(c, 'Backup/vectorized_contents_%d.csv'%(i+1))
+def loadVectorizedContents():
+    contents = []
+    files = os.listdir('Backup')
+    for i, f in enumerate(files):
+        content = np.array(loadCSV('Backup/vectorized_contents_%d.csv'%(i+1)), dtype=np.float_)
+        contents.append(content)
+    return np.array(contents)
 
 #########################################################################################################
 ######################################### TXT ###########################################################

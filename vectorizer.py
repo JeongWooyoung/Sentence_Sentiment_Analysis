@@ -41,7 +41,7 @@ class Vectorizer:
         if training:
             tokenized_contents = self.tokenizing(contents)
 
-            word2vec_model = Word2Vec(tokenized_contents, size=dims, window=6, min_count=2, workers=8, iter=1000, sg=1)
+            word2vec_model = Word2Vec(tokenized_contents, size=dims-1, window=6, min_count=2, workers=8, iter=1000, sg=1)
             dir_path = model_path[:model_path.rfind('/')]
 
             if not os.path.isdir(dir_path): fh.makeDirectories(dir_path)
@@ -56,7 +56,7 @@ class Vectorizer:
         word_vectors = word2vec_model.wv
         senti_dict = fh.getSentiDictionary()
         # 추후 작업필요(기본형 기준 매칭 정확도 개선필요)
-        word_vectors = {w:word_vectors[w].tolist()+[senti_dict[w] if w in senti_dict.keys() else .0] for w in word_vectors.vocab.keys()}
+        word_vectors = {w:word_vectors[w].tolist()+[senti_dict[w[:2]] if w[:2] in senti_dict.keys() else .0] for w in word_vectors.vocab.keys()}
 
         # 문장을 벡터리스트로 전환
         max_len = 0
@@ -67,16 +67,15 @@ class Vectorizer:
                 if w in word_vectors.keys():
                     vectorized_content.append(word_vectors[w])
             length = len(vectorized_content)
-            if length > 0: vectorized_contents.append(vectorized_content)
+            if length > 0: vectorized_contents.append(np.array(vectorized_content))
             if length > max_len: max_len = length
 
         # 벡터리스트 패딩
         if padding:
-            padded_contents = []
+            padded_contents = np.zeros((1, max_len, dims))
             for v in vectorized_contents:
                 size = len(v)
-                if size < max_len: padded_contents.append(np.zeros((dims+1, max_len-size)).tolist()+v)
-                else: padded_contents.append(v)
-
-            return padded_contents
-        else: return vectorized_contents
+                if size < max_len: padded_contents = np.concatenate((padded_contents, [np.array(np.zeros((max_len-size, dims)).tolist()+v.tolist())]), axis=0)
+                else: padded_contents = np.concatenate((padded_contents,[v]), axis=0)
+            return padded_contents[1:]
+        else: return np.array(vectorized_contents, dtype=np.float_)

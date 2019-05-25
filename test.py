@@ -43,6 +43,5 @@ if __name__ == '__main__':
     word_vectors = word2vec_model.wv
 
     print(word_vectors)
-    # Make Train Set
 
     # Train CNN and Evaluation

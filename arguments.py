@@ -5,7 +5,7 @@ import os
 
 #########################################################################################################
 ### initialize parameter ################################################################################
-def parse_args(model_name = 'LSTM', results_path=os.getcwd()+'/results'):
+def parse_args(model_name = 'LSTM', results_path=os.getcwd()+'/results/'):
 
     desc = "Tensorflow implementation of 'LSTM'"
     parser = argparse.ArgumentParser(description=desc)
